@@ -10,8 +10,10 @@ Acceptance is the same robustness test sweep_paired.py uses, run by the agent:
     standard errors). Marginal/noisy gains are rejected. Each commit raises the
     bar, so the committed best is monotonic and the last commit IS the best.
   - Each round is a FRESH agent context that adds/retunes exactly ONE signal on
-    top of the committed schema; combinations accumulate across rounds. The
-    committed schema (with the agent's comments) is its only cross-round memory.
+    top of the committed schema; combinations accumulate across rounds. Reasoning
+    state does not carry across rounds; the cross-round memory is the committed
+    schema (with the agent's comments) plus a compact summary of earlier rounds'
+    commit attempts (committed AND rejected), both shown at the start of each round.
   - final_eval.py reports the committed best on minimarco (in-sample, like the
     manual sweep) and full MSMARCO (the held-out generalization test).
 

@@ -39,10 +39,12 @@ dev queries):
   rotations, so the committed best is **monotonic**: the last commit is the best,
   which is what `agent/harness/state.json` records for `final_eval.py best`.
 - Each round is a **fresh agent context** starting from the committed schema.
-  Reasoning state does not carry across rounds, so the **committed schema is the
-  agent's only memory** — it reads the schema (and the comments earlier rounds
-  left on each committed signal) as a running work log, and is asked to comment
-  anything it adds.
+  Reasoning state does not carry across rounds, so the **cross-round memory is the
+  committed schema plus a compact summary of earlier rounds' commit attempts**
+  (committed *and* rejected). It reads the schema (and the comments earlier rounds
+  left on each committed signal) as a running work log — and is asked to comment
+  anything it adds — while the attempts summary lets it build on near-misses and
+  avoid re-trying rejected dead ends.
 
 Tools the agent has (defined in `run_agent.py`):
 
