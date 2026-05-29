@@ -1,0 +1,23 @@
+# Data — large, and fully regenerable via scripts/build_minimarco.py
+# (downloads MSMARCO, samples the 650k minimarco subset deterministically)
+data/
+
+# Python env
+.venv/
+__pycache__/
+*.pyc
+
+# Agent run artifacts (state, logs, transcripts, snapshots)
+agent/run_state/
+agent/harness/state.json
+agent/harness/log.jsonl
+
+# Never commit secrets
+.env
+*.key
+
+# Run logs (not committed)
+*.log
+
+# Local dev notes — not part of the published repo
+HANDOFF.md

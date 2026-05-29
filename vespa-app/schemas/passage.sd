@@ -1,0 +1,69 @@
+schema passage {
+
+    document passage {
+
+        field doc_id type long {
+            indexing: summary | attribute
+            attribute: fast-search
+        }
+
+        field description type string {
+            indexing: index | summary
+            index: enable-bm25
+            stemming: best
+        }
+
+        # 1 if the doc is in the 650k minimarco sample (random_state=42), else 0.
+        # Lets us evaluate either minimarco (filter subset=1) or the full
+        # corpus from a single index.
+        field subset type int {
+            indexing: summary | attribute
+            attribute: fast-search
+            rank: filter
+        }
+    }
+
+    # Hardcode English so document stemming is deterministic (Vespa otherwise
+    # detects language per document). Queries pass language=en to match.
+    field language type string {
+        indexing: "en" | set_language | summary
+    }
+
+    fieldset default {
+        fields: description
+    }
+
+    # Anserini-tuned BM25 baseline.
+    rank-profile bm25 inherits default {
+        first-phase {
+            expression: bm25(description)
+        }
+        rank-properties {
+            bm25(description).k1: 0.6
+            bm25(description).b: 0.62
+        }
+    }
+
+    # BM25 plus the two extra lexical signals that survived the paired sweep,
+    # each exposed as a query-time weight (default 0.0, so passing no inputs ==
+    # pure BM25). Used by scripts/sweep_paired.py and scripts/eval_full_msmarco.py.
+    # The agent loop does NOT use this profile — it starts from
+    # agent/baseline_schema.sd (bm25 only) and builds its own.
+    rank-profile lexical inherits default {
+        inputs {
+            query(w_prox)     double: 0.0   # nativeProximity
+            query(w_fm_early) double: 0.0   # fieldMatch.earliness
+        }
+        first-phase {
+            expression {
+                bm25(description)
+                + query(w_prox)     * nativeProximity
+                + query(w_fm_early) * fieldMatch(description).earliness
+            }
+        }
+        rank-properties {
+            bm25(description).k1: 0.6
+            bm25(description).b: 0.62
+        }
+    }
+}

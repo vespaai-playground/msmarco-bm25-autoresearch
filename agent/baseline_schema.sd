@@ -1,0 +1,43 @@
+schema passage {
+
+    document passage {
+
+        field doc_id type long {
+            indexing: summary | attribute
+            attribute: fast-search
+        }
+
+        field description type string {
+            indexing: index | summary
+            index: enable-bm25
+            stemming: best
+        }
+
+        field subset type int {
+            indexing: summary | attribute
+            attribute: fast-search
+            rank: filter
+        }
+    }
+
+    field language type string {
+        indexing: "en" | set_language | summary
+    }
+
+    fieldset default {
+        fields: description
+    }
+
+    # Anserini-tuned BM25 baseline. This is the agent's starting point — it
+    # adds new rank-profiles below to try to beat it. No `lexical` profile and
+    # no hint of the winning weights, so the agent has to do the work.
+    rank-profile bm25 inherits default {
+        first-phase {
+            expression: bm25(description)
+        }
+        rank-properties {
+            bm25(description).k1: 0.6
+            bm25(description).b: 0.62
+        }
+    }
+}

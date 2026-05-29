@@ -1,0 +1,12 @@
+[project]
+name = "msmarco-bm25-autoresearch"
+version = "0.1.0"
+description = "Reproduce MSMARCO BM25 tuning experiments on Vespa: manual rank-feature sweep + LLM agent loop"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "pandas>=2.2",
+    "requests>=2.32",
+    "pyvespa>=1.2",
+    # for the LLM agent loop (agent/run_agent.py)
+    "openai>=2.37",
+]
