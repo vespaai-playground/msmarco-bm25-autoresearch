@@ -123,6 +123,11 @@ def main():
         profile = args[0]
         inputs, extra = {}, {}
         for a in args[1:]:
+            if "=" not in a:
+                raise SystemExit(
+                    f"Bad argument {a!r}: expected key=value "
+                    f"(e.g. w_prox=10 w_fm_early=8 sw=0.05)."
+                )
             k, v = a.split("=", 1)
             if k == "sw":
                 extra["ranking.matching.weakand.stopwordLimit"] = float(v)

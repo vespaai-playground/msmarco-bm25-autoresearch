@@ -34,7 +34,9 @@ def load_full():
     qrels = {}
     with QRELS.open() as fh:
         for row in csv.reader(fh, delimiter="\t"):
-            qid, _, doc_id, grade = row
+            if len(row) < 4:  # skip blank/short lines (e.g. a trailing newline)
+                continue
+            qid, _, doc_id, grade = row[:4]
             if int(grade) > 0:
                 qrels.setdefault(qid, set()).add(doc_id)
     # only keep queries with at least one qrel (they all should, but safe)
