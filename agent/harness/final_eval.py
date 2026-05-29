@@ -17,6 +17,7 @@ Usage (experimenter only):
 """
 import csv
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -54,6 +55,11 @@ def load_tsv(path, names):
                 if len(row) >= 3 and int(row[2]) > 0:
                     out.setdefault(row[0], set()).add(row[1])
     return out
+
+
+def _declared_query_inputs(schema_text):
+    """Names declared as `query(name) ...` in the schema's inputs blocks."""
+    return set(re.findall(r"query\(\s*([A-Za-z_]\w*)\s*\)", schema_text))
 
 
 def evaluate(queries, qrels, profile, inputs, extra, scope_filter=None, hits=10):
@@ -123,11 +129,28 @@ def main():
         profile = args[0]
         inputs, extra = {}, {}
         for a in args[1:]:
+            if "=" not in a:
+                raise SystemExit(
+                    f"Bad argument {a!r}: expected key=value "
+                    f"(e.g. w_prox=10 w_fm_early=8 sw=0.05)."
+                )
             k, v = a.split("=", 1)
             if k == "sw":
                 extra["ranking.matching.weakand.stopwordLimit"] = float(v)
             else:
                 inputs[k] = float(v)
+        # Guard against typo'd input names. Vespa defaults an unknown
+        # query(name) to 0, so `wprox=10` (missing underscore) would silently
+        # score plain BM25 and report it as if proximity were tested. Reject any
+        # input not declared in the deployed schema.
+        declared = _declared_query_inputs(SCHEMA.read_text()) if SCHEMA.exists() else set()
+        unknown = sorted(set(inputs) - declared)
+        if unknown:
+            raise SystemExit(
+                f"Unknown query input(s) {unknown} not declared in {SCHEMA}.\n"
+                f"Declared inputs: {sorted(declared) or '(none)'}. "
+                f"(Vespa would silently default these to 0 and score a different config.)"
+            )
 
     # 1) minimarco: all 543 scoreable queries, subset=1 (in-sample)
     queries = load_tsv(QUERIES, "queries")

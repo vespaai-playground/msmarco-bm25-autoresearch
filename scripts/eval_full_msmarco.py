@@ -26,35 +26,44 @@ MINI_QRELS = DATA / "minimarco_qrels.tsv"
 VESPA_URL = "http://localhost:8080"
 
 
-def load_full():
+def _read_queries(path):
     queries = {}
-    with QUERIES.open() as fh:
-        for qid, q in csv.reader(fh, delimiter="\t"):
-            queries[qid] = q
-    qrels = {}
-    with QRELS.open() as fh:
+    with path.open() as fh:
         for row in csv.reader(fh, delimiter="\t"):
-            qid, _, doc_id, grade = row
-            if int(grade) > 0:
-                qrels.setdefault(qid, set()).add(doc_id)
+            if len(row) >= 2:  # skip blank/short lines
+                queries[row[0]] = row[1]
+    return queries
+
+
+def _read_qrels(path, doc_col):
+    """qrels keyed by query_id -> set of relevant doc_ids. `doc_col` is the
+    doc-id column index; the grade is the column right after it. Handles both
+    the 4-col TREC full qrels (qid 0 docid grade -> doc_col=2) and the 3-col
+    minimarco qrels (qid docid grade -> doc_col=1), skipping blank/short lines."""
+    qrels = {}
+    with path.open() as fh:
+        for row in csv.reader(fh, delimiter="\t"):
+            if len(row) <= doc_col + 1:  # skip blank/short lines
+                continue
+            if int(row[doc_col + 1]) > 0:
+                qrels.setdefault(row[0], set()).add(row[doc_col])
+    return qrels
+
+
+def _load(queries_path, qrels_path, doc_col):
+    queries = _read_queries(queries_path)
+    qrels = _read_qrels(qrels_path, doc_col)
     # only keep queries with at least one qrel (they all should, but safe)
-    queries = {qid: q for qid, q in queries.items() if qid in qrels}
-    return queries, qrels
+    return {qid: q for qid, q in queries.items() if qid in qrels}, qrels
+
+
+def load_full():
+    return _load(QUERIES, QRELS, doc_col=2)
 
 
 def load_minimarco():
     """The 543 scoreable subset queries (3-col qrels written by build_minimarco)."""
-    queries = {}
-    with MINI_QUERIES.open() as fh:
-        for qid, q in csv.reader(fh, delimiter="\t"):
-            queries[qid] = q
-    qrels = {}
-    with MINI_QRELS.open() as fh:
-        for qid, doc_id, grade in csv.reader(fh, delimiter="\t"):
-            if int(grade) > 0:
-                qrels.setdefault(qid, set()).add(doc_id)
-    queries = {qid: q for qid, q in queries.items() if qid in qrels}
-    return queries, qrels
+    return _load(MINI_QUERIES, MINI_QRELS, doc_col=1)
 
 
 def make_fn(profile, inputs, extra, scope="full"):
