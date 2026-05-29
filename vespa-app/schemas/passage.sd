@@ -8,7 +8,13 @@ schema passage {
         }
 
         field description type string {
-            indexing: index | summary
+            indexing {
+                # Hardcode English so document stemming is deterministic
+                # (Vespa otherwise detects language per field). Queries pass
+                # language=en to match.
+                "en" | set_language;
+                index | summary;
+            }
             index: enable-bm25
             stemming: best
         }
@@ -21,12 +27,6 @@ schema passage {
             attribute: fast-search
             rank: filter
         }
-    }
-
-    # Hardcode English so document stemming is deterministic (Vespa otherwise
-    # detects language per document). Queries pass language=en to match.
-    field language type string {
-        indexing: "en" | set_language | summary
     }
 
     fieldset default {
