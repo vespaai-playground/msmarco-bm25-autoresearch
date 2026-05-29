@@ -41,10 +41,10 @@ dev queries):
 - Each round is a **fresh agent context** starting from the committed schema.
   Reasoning state does not carry across rounds, so the **cross-round memory is the
   committed schema plus a compact summary of earlier rounds' commit attempts**
-  (committed *and* rejected). It reads the schema (and the comments earlier rounds
-  left on each committed signal) as a running work log — and is asked to comment
-  anything it adds — while the attempts summary lets it build on near-misses and
-  avoid re-trying rejected dead ends.
+  (committed *and* rejected). The committed schema's accumulated first-phase
+  expression is its running work log (each accepted round adds/retunes one signal,
+  so the expression grows), while the attempts summary lets it build on near-misses
+  and avoid re-trying rejected dead ends.
 
 Tools the agent has (defined in `run_agent.py`):
 
